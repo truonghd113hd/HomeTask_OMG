@@ -1,0 +1,65 @@
+{
+  "root": true,
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "ecmaVersion": 2020,
+    "sourceType": "module",
+    "ecmaFeatures": {
+      "jsx": true
+    }
+  },
+  "plugins": ["@typescript-eslint", "react", "jsx-a11y", "import"],
+  "extends": [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:react/recommended",
+    "plugin:jsx-a11y/recommended",
+    "plugin:import/errors",
+    "plugin:import/warnings",
+    "prettier"
+  ],
+  "settings": {
+    "react": {
+      "version": "detect"
+    }
+  },
+  "rules": {
+    "react/react-in-jsx-scope": "off",
+    "@typescript-eslint/no-explicit-any": "warn",
+    "import/order": ["warn", { "groups": ["builtin", "external", "internal"] }]
+  }
+  ,
+  "overrides": [
+    {
+      "files": ["**/__tests__/**/*.js", "**/*.test.js"],
+      "env": { "jest": true }
+    },
+    {
+      "files": ["jest.config.js", "**/*.config.js"],
+      "env": { "node": true }
+    }
+    ,
+    {
+      "files": [
+        "server.js",
+        "config/**/*.js",
+        "controllers/**/*.js",
+        "routes/**/*.js",
+        "middleware/**/*.js",
+        "models/**/*.js",
+        "utils/**/*.js",
+        "setupProxy.js"
+      ],
+      "env": { "node": true },
+      "parserOptions": { "sourceType": "script" },
+      "rules": {
+        "@typescript-eslint/no-var-requires": "off"
+      }
+    },
+    {
+      "files": ["src/**"],
+      "env": { "browser": true, "node": false, "es6": true },
+      "globals": { "process": "readonly" }
+    }
+  ]
+}
