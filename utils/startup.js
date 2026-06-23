@@ -27,8 +27,9 @@ function runStartupTasks(config) {
 
     child.on('message', (msg) => {
       if (msg && typeof msg.fee !== 'undefined') {
-        config.computedFee = msg.fee;
-        logger.info(`Default fee computed (worker): ${msg.fee}`);
+        const { computeFee } = require('./fee');
+        const fee = computeFee(config.fee.defaultAmount, config.fee.defaultPercentage);
+        config.computedFee = fee;
       }
       clearTimeout(timeout);
       try {
@@ -37,18 +38,8 @@ function runStartupTasks(config) {
         /* ignore */
       }
     });
-    logger.info('Startup worker forked.');
   } catch (err) {
     logger.warn(`Failed to spawn startup worker: ${err && err.message}`);
-    // Fallback: run synchronously in-process so startup still completes
-    try {
-      const { computeFee } = require('./fee');
-      const fee = computeFee(config.fee.defaultAmount, config.fee.defaultPercentage);
-      config.computedFee = fee;
-      logger.info(`Default fee computed (fallback): ${fee}`);
-    } catch (e) {
-      logger.warn(`Fallback startup task failed: ${e && e.message}`);
-    }
   }
 }
 
