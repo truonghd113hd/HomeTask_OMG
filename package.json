@@ -59,7 +59,7 @@
     "@types/jest": "^29.5.4",
     "@testing-library/react": "^14.0.0",
     "@testing-library/jest-dom": "^6.0.0",
-    "husky": "^8.0.3",
+    "husky": "^9.1.7",
     "lint-staged": "^14.0.0",
     "supertest": "^6.2.4",
     "@types/supertest": "^2.0.13",
