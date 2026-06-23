@@ -31,15 +31,9 @@
     "express": "^4.18.2",
     "express-rate-limit": "^8.2.1",
     "http-proxy-middleware": "^2.0.6",
-<<<<<<< HEAD
-    "morgan": "^1.10.1",
-  "react": "18.2.0",
-  "react-dom": "18.2.0",
-=======
     "morgan": "^1.11.0",
     "react": "^18.2.0",
     "react-dom": "^19.2.7",
->>>>>>> f14ba3fb351280cf476b470dab1d5ebed3d80263
     "react-scripts": "5.0.1",
     "request": "^2.88.2"
   },
