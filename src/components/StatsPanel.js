@@ -1,9 +1,25 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import './StatsPanel.css';
 
 const StatsPanel = ({ stats, onMine }) => {
   if (!stats) return null;
+  const [feeInfo, setFeeInfo] = useState(null);
+
+  useEffect(() => {
+    let mounted = true;
+    fetch('/api/fee')
+      .then((r) => r.json())
+      .then((data) => {
+        if (mounted) setFeeInfo(data);
+      })
+      .catch(() => {
+        /* ignore */
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   return (
     <div className="stats-panel">
@@ -36,6 +52,15 @@ const StatsPanel = ({ stats, onMine }) => {
             {stats.isValid ? '✓ Valid' : '✗ Invalid'}
           </div>
         </div>
+
+        {feeInfo && (
+          <div className="stat-item">
+            <div className="stat-label">Fee</div>
+            <div className="stat-value">
+              {feeInfo.amount} @ {feeInfo.percent}% → {feeInfo.fee}
+            </div>
+          </div>
+        )}
       </div>
 
       <button className="mine-button" onClick={onMine}>

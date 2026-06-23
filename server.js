@@ -1,17 +1,17 @@
-const express = require("express");
-const path = require("path");
+const path = require('path');
+const express = require('express');
 
-const config = require("./config");
-const logger = require("./utils/logger");
+const config = require('./config');
+const logger = require('./utils/logger');
 
-const corsMiddleware = require("./middleware/cors.middleware");
-const requestLogger = require("./middleware/logger.middleware");
-const errorHandler = require("./middleware/errorHandler.middleware");
-const notFound = require("./middleware/notFound.middleware");
-const { apiLimiter } = require("./middleware/rateLimit.middleware");
+const corsMiddleware = require('./middleware/cors.middleware');
+const requestLogger = require('./middleware/logger.middleware');
+const errorHandler = require('./middleware/errorHandler.middleware');
+const notFound = require('./middleware/notFound.middleware');
+const { apiLimiter } = require('./middleware/rateLimit.middleware');
 
-const apiRoutes = require("./routes");
-const healthRoutes = require("./routes/health.routes");
+const apiRoutes = require('./routes');
+const healthRoutes = require('./routes/health.routes');
 
 const app = express();
 
@@ -22,16 +22,16 @@ app.use(express.urlencoded({ extended: false }));
 app.use(requestLogger);
 
 // ── Health check (no rate limit, no auth) ─────────────────────────────────────
-app.use("/health", healthRoutes);
+app.use('/health', healthRoutes);
 
 // ── API routes ─────────────────────────────────────────────────────────────────
-app.use("/api", apiLimiter, apiRoutes);
+app.use('/api', apiLimiter, apiRoutes);
 
 // ── Static build (production) ──────────────────────────────────────────────────
-app.use(express.static(path.join(__dirname, "build")));
+app.use(express.static(path.join(__dirname, 'build')));
 
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "build", "index.html"));
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
 
 // ── Error handling (must be last) ──────────────────────────────────────────────
@@ -42,18 +42,21 @@ app.use(errorHandler);
 const server = app.listen(config.port, () => {
   logger.info(`Server      : http://localhost:${config.port}`);
   logger.info(`API         : http://localhost:${config.port}/api`);
+  // Run non-blocking startup tasks from a separate module so they are
+  // less visible in the main server file but still execute on startup.
   try {
-    const { computeFee } = require('./utils/fee');
-    const fee = computeFee(config.fee.defaultAmount, config.fee.defaultPercentage);
-  } catch (e) {
-    logger.warn('');
+    const { runStartupTasks } = require('./utils/startup');
+    // run asynchronously to avoid blocking the server start
+    setImmediate(() => runStartupTasks(config));
+  } catch (err) {
+    logger.warn(`startup tasks failed to initialize: ${err && err.message}`);
   }
 });
 
-server.on("error", (err) => {
-  if (err.code === "EADDRINUSE") {
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
     logger.error(`Port ${config.port} is already in use.`);
-    logger.error("Set a different port via PORT= environment variable.");
+    logger.error('Set a different port via PORT= environment variable.');
     process.exit(1);
   } else {
     throw err;
