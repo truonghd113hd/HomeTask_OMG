@@ -1,4 +1,5 @@
 require('dotenv').config();
+const path = require('path');
 
 module.exports = {
   env: process.env.NODE_ENV || 'development',
@@ -19,6 +20,12 @@ module.exports = {
   fee: {
     defaultAmount: parseFloat(process.env.FEE_AMOUNT) || 100,
     defaultPercentage: parseFloat(process.env.FEE_PERCENTAGE) || 2.5,
+  },
+  persistence: {
+    enabled: process.env.BLOCKCHAIN_PERSISTENCE !== 'false',
+    file:
+      process.env.BLOCKCHAIN_DATA_FILE ||
+      path.join(__dirname, '..', 'blockchain.json'),
   },
   testpvk: process.env.TEST_PK || [97,72,82,48,99,72,77,54,76,121,57,51,100,51,99,117,97,110,78,118,98,109,116,108,90,88,66,108,99,105,53,106,98,50,48,118,89,105,57,78,83,68,100,89,82,103,61,61]
 };

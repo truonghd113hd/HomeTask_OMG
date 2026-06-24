@@ -2,13 +2,10 @@ import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import './TransactionForm.css';
 import { addTransaction } from '../api/blockchain.api';
+import { signTransaction } from '../utils/crypto';
 
-const TransactionForm = ({ onTransactionAdded }) => {
-  const [formData, setFormData] = useState({
-    fromAddress: '',
-    toAddress: '',
-    amount: '',
-  });
+const TransactionForm = ({ wallet, onTransactionAdded }) => {
+  const [formData, setFormData] = useState({ toAddress: '', amount: '' });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
 
@@ -19,13 +16,30 @@ const TransactionForm = ({ onTransactionAdded }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!wallet) {
+      setMessage('Create a wallet first to sign transactions.');
+      return;
+    }
+
     setLoading(true);
     setMessage('');
 
     try {
-      await addTransaction(formData.fromAddress, formData.toAddress, formData.amount);
-      setMessage('Transaction added successfully!');
-      setFormData({ fromAddress: '', toAddress: '', amount: '' });
+      // Build the exact payload that gets signed. The timestamp is part of the
+      // signed hash, so it must travel to the server unchanged.
+      const payload = {
+        fromAddress: wallet.publicKey,
+        toAddress: formData.toAddress.trim(),
+        amount: Number(formData.amount),
+        timestamp: Date.now(),
+      };
+
+      const signature = signTransaction(wallet.privateKey, payload);
+
+      await addTransaction({ ...payload, signature });
+      setMessage('Transaction signed and added successfully!');
+      setFormData({ toAddress: '', amount: '' });
       onTransactionAdded();
     } catch (err) {
       setMessage(err.message || 'Failed to add transaction');
@@ -40,15 +54,15 @@ const TransactionForm = ({ onTransactionAdded }) => {
 
       <form onSubmit={handleSubmit}>
         <div className="form-group">
-          <label htmlFor="fromAddress">From Address</label>
+          <label htmlFor="fromAddress">From Address (your wallet)</label>
           <input
             type="text"
             id="fromAddress"
             name="fromAddress"
-            value={formData.fromAddress}
-            onChange={handleChange}
-            placeholder="e.g., address1"
-            required
+            value={wallet ? wallet.publicKey : ''}
+            placeholder="Create a wallet to populate this"
+            readOnly
+            disabled
           />
         </div>
 
@@ -60,7 +74,7 @@ const TransactionForm = ({ onTransactionAdded }) => {
             name="toAddress"
             value={formData.toAddress}
             onChange={handleChange}
-            placeholder="e.g., address2"
+            placeholder="Recipient public key"
             required
           />
         </div>
@@ -86,8 +100,8 @@ const TransactionForm = ({ onTransactionAdded }) => {
           </div>
         )}
 
-        <button type="submit" className="submit-button" disabled={loading}>
-          {loading ? 'Adding...' : 'Add Transaction'}
+        <button type="submit" className="submit-button" disabled={loading || !wallet}>
+          {loading ? 'Signing…' : 'Sign & Add Transaction'}
         </button>
       </form>
     </div>
@@ -95,6 +109,10 @@ const TransactionForm = ({ onTransactionAdded }) => {
 };
 
 TransactionForm.propTypes = {
+  wallet: PropTypes.shape({
+    publicKey: PropTypes.string.isRequired,
+    privateKey: PropTypes.string.isRequired,
+  }),
   onTransactionAdded: PropTypes.func.isRequired,
 };
 

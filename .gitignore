@@ -4,3 +4,6 @@
 .env
 *.log
 npm-debug.log*
+
+# Persisted blockchain state (Task 2)
+/blockchain.json

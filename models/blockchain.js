@@ -1,4 +1,8 @@
 const crypto = require('crypto');
+const { publicKeyFromAddress, privateKeyFromHex } = require('../utils/crypto');
+
+const SIGNATURE_ALGORITHM = 'SHA256';
+const SIGNATURE_ENCODING = 'ieee-p1363';
 
 class Block {
   constructor(timestamp, transactions, previousHash = '') {
@@ -38,6 +42,25 @@ class Block {
     }
     return true;
   }
+
+  /**
+   * Rebuilds a `Block` instance (with real `Transaction` instances) from the
+   * plain object produced by `JSON.parse`. The stored `nonce`/`hash` are kept
+   * verbatim so the chain still validates after a reload.
+   *
+   * @param {object} data - a serialised block.
+   * @returns {Block}
+   */
+  static fromJSON(data) {
+    const block = new Block(
+      data.timestamp,
+      (data.transactions || []).map(Transaction.fromJSON),
+      data.previousHash
+    );
+    block.nonce = data.nonce;
+    block.hash = data.hash;
+    return block;
+  }
 }
 
 class Transaction {
@@ -56,39 +79,76 @@ class Transaction {
       .digest('hex');
   }
 
-  signTransaction(signingKey) {
-    if (signingKey.getPublic('hex') !== this.fromAddress) {
+  /**
+   * Signs this transaction's hash with the owner's private key. The resulting
+   * IEEE-P1363 signature is stored on `this.signature` (hex-encoded).
+   *
+   * @param {string} privateKeyHex - the raw secp256k1 scalar that owns
+   *   `this.fromAddress`.
+   * @throws {Error} if the private key does not correspond to `fromAddress`.
+   */
+  signTransaction(privateKeyHex) {
+    const signingKey = privateKeyFromHex(privateKeyHex, this.fromAddress);
+
+    this.signature = crypto
+      .sign(SIGNATURE_ALGORITHM, Buffer.from(this.calculateHash()), {
+        key: signingKey,
+        dsaEncoding: SIGNATURE_ENCODING,
+      })
+      .toString('hex');
+
+    // A private key that does not own `fromAddress` produces a signature that
+    // will not verify against it — reject rather than store a useless signature.
+    if (!this.isValid()) {
+      this.signature = '';
       throw new Error('You cannot sign transactions for other wallets!');
     }
-
-    const hashTx = this.calculateHash();
-    const sig = signingKey.sign(hashTx, 'base64');
-    this.signature = sig.toDER('hex');
   }
 
+  /**
+   * Validates the transaction's signature against `fromAddress`.
+   *
+   * - Mining-reward transactions (`fromAddress === null`) are always valid.
+   * - Every other transaction MUST carry a signature that verifies against its
+   *   sender's public key. (The previous demo bypass that accepted unsigned
+   *   transactions has been removed.)
+   *
+   * @returns {boolean}
+   */
   isValid() {
     if (this.fromAddress === null) return true;
 
     if (!this.signature || this.signature.length === 0) {
-      return true;
+      return false;
     }
 
     try {
-      const publicKey = crypto.createPublicKey({
-        key: Buffer.from(this.fromAddress, 'hex'),
-        format: 'der',
-        type: 'spki',
-      });
+      const publicKey = publicKeyFromAddress(this.fromAddress);
 
       return crypto.verify(
-        null,
+        SIGNATURE_ALGORITHM,
         Buffer.from(this.calculateHash()),
-        publicKey,
+        { key: publicKey, dsaEncoding: SIGNATURE_ENCODING },
         Buffer.from(this.signature, 'hex')
       );
     } catch {
       return false;
     }
+  }
+
+  /**
+   * Rebuilds a `Transaction` instance from the plain object produced by
+   * `JSON.parse`, preserving the original timestamp and signature so the
+   * transaction hash (and therefore the chain) still validates after a reload.
+   *
+   * @param {object} data - a serialised transaction.
+   * @returns {Transaction}
+   */
+  static fromJSON(data) {
+    const tx = new Transaction(data.fromAddress, data.toAddress, data.amount);
+    tx.timestamp = data.timestamp;
+    tx.signature = data.signature || '';
+    return tx;
   }
 }
 
