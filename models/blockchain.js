@@ -195,6 +195,26 @@ class Blockchain {
     this.pendingTransactions.push(transaction);
   }
 
+  /**
+   * Adds a faucet/gift transaction directly to the pending pool without
+   * requiring a signature. Like mining rewards, gift transactions originate
+   * from `null` (the system) so the normal signed-transaction flow does not
+   * apply. This method is the only sanctioned way to insert unsigned
+   * system-originated transactions outside of mining.
+   *
+   * @param {string} toAddress - wallet address to credit.
+   * @param {number} amount - coin amount to gift.
+   * @returns {Transaction} the pending gift transaction.
+   */
+  addGiftTransaction(toAddress, amount) {
+    if (!toAddress) {
+      throw new Error('Recipient address is required');
+    }
+    const giftTx = new Transaction(null, toAddress, amount);
+    this.pendingTransactions.push(giftTx);
+    return giftTx;
+  }
+
   getBalanceOfAddress(address) {
     let balance = 0;
 

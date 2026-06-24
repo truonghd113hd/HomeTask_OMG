@@ -47,6 +47,7 @@
         "routes/**/*.js",
         "middleware/**/*.js",
         "models/**/*.js",
+        "services/**/*.js",
         "utils/**/*.js",
         "setupProxy.js"
       ],

@@ -3,7 +3,7 @@
  */
 /* eslint-env jest */
 
-const { createWallet } = require('../controllers/wallet.controller');
+const { createWallet, giftCoins } = require('../controllers/wallet.controller');
 const { ADDRESS_HEX_LENGTH } = require('../utils/crypto');
 
 const mockRes = () => {
@@ -35,5 +35,45 @@ describe('wallet.controller.createWallet', () => {
     expect(res1.json.mock.calls[0][0].publicKey).not.toEqual(
       res2.json.mock.calls[0][0].publicKey
     );
+  });
+});
+
+describe('wallet.controller.giftCoins', () => {
+  it('gifts 500 coins and adds to pending transactions when not in production', () => {
+    const { blockchain } = require('../models');
+    const originalPendingCount = blockchain.pendingTransactions.length;
+
+    const res = mockRes();
+    const next = jest.fn();
+    const address = '04' + 'a'.repeat(128);
+
+    giftCoins({ body: { address } }, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(200);
+    const body = res.json.mock.calls[0][0];
+    expect(body.success).toBe(true);
+    expect(body.message).toMatch(/gift/i);
+    expect(blockchain.pendingTransactions.length).toBe(originalPendingCount + 1);
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('rejects with 403 in production environment', () => {
+    const config = require('../config');
+    const originalEnv = config.env;
+    config.env = 'production';
+
+    const res = mockRes();
+    const next = jest.fn();
+    const address = '04' + 'a'.repeat(128);
+
+    try {
+      giftCoins({ body: { address } }, res, next);
+      expect(res.status).toHaveBeenCalledWith(403);
+      const body = res.json.mock.calls[0][0];
+      expect(body.success).toBe(false);
+      expect(body.error).toMatch(/only available/i);
+    } finally {
+      config.env = originalEnv;
+    }
   });
 });

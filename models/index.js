@@ -94,6 +94,7 @@ const seedDemoData = () => {
 
 persistAfter('addTransaction');
 persistAfter('minePendingTransactions');
+persistAfter('addGiftTransaction');
 
 if (!restorePersistedState()) {
   seedDemoData();

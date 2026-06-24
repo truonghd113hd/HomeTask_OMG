@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import './StatsPanel.css';
+import ENDPOINTS from '../api/endpoints';
 
 const StatsPanel = ({ stats, onMine }) => {
   if (!stats) return null;
@@ -8,7 +9,7 @@ const StatsPanel = ({ stats, onMine }) => {
 
   useEffect(() => {
     let mounted = true;
-    fetch('/api/fee')
+    fetch(ENDPOINTS.FEE)
       .then((r) => r.json())
       .then((data) => {
         if (mounted) setFeeInfo(data);

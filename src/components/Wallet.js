@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import './Wallet.css';
-import { createWallet, fetchBalance } from '../api/blockchain.api';
+import { createWallet, giftWallet } from '../api/blockchain.api';
 
 /**
  * Wallet panel.
@@ -10,11 +10,12 @@ import { createWallet, fetchBalance } from '../api/blockchain.api';
  * public key (the wallet address) and its on-chain balance, and keeps the
  * private key in client state only — it is never sent back to the server.
  */
-const Wallet = ({ wallet, onWalletCreated, refreshSignal }) => {
+const Wallet = ({ wallet, onWalletCreated, balance }) => {
   const [loading, setLoading] = useState(false);
-  const [balance, setBalance] = useState(null);
   const [error, setError] = useState('');
+  const [giftMessage, setGiftMessage] = useState({ text: '', type: '' });
   const [revealKey, setRevealKey] = useState(false);
+  const [giftLoading, setGiftLoading] = useState(false);
 
   const handleCreate = async () => {
     setLoading(true);
@@ -30,20 +31,19 @@ const Wallet = ({ wallet, onWalletCreated, refreshSignal }) => {
     }
   };
 
-  const refreshBalance = useCallback(async () => {
+  const handleGift = async () => {
     if (!wallet) return;
+    setGiftLoading(true);
+    setGiftMessage({ text: '', type: '' });
     try {
-      const data = await fetchBalance(wallet.publicKey);
-      setBalance(data.balance);
+      const response = await giftWallet(wallet.publicKey);
+      setGiftMessage({ text: response.message || 'Gift coins added!', type: 'success' });
     } catch (err) {
-      setError(err.message || 'Failed to fetch balance');
+      setGiftMessage({ text: err.message || 'Failed to request gift coins', type: 'error' });
+    } finally {
+      setGiftLoading(false);
     }
-  }, [wallet]);
-
-  // Refresh the balance whenever the wallet changes or the chain updates.
-  useEffect(() => {
-    refreshBalance();
-  }, [refreshBalance, refreshSignal]);
+  };
 
   return (
     <div className="wallet-panel">
@@ -77,6 +77,21 @@ const Wallet = ({ wallet, onWalletCreated, refreshSignal }) => {
               </button>
             )}
           </div>
+
+          <div className="wallet-field">
+            <span className="wallet-label">Free Coins (dev only)</span>
+            <button
+              type="button"
+              className="wallet-link"
+              onClick={handleGift}
+              disabled={giftLoading}
+            >
+              {giftLoading ? 'Requesting…' : '🎁 Request Gift Coins'}
+            </button>
+            {giftMessage.text && (
+              <span className={`form-message ${giftMessage.type}`}>{giftMessage.text}</span>
+            )}
+          </div>
         </div>
       )}
 
@@ -95,7 +110,7 @@ Wallet.propTypes = {
     privateKey: PropTypes.string.isRequired,
   }),
   onWalletCreated: PropTypes.func.isRequired,
-  refreshSignal: PropTypes.any,
+  balance: PropTypes.number,
 };
 
 export default Wallet;

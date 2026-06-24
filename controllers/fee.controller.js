@@ -1,6 +1,6 @@
-/* eslint-env node */
 const config = require('../config');
 const { computeFee } = require('../utils/fee');
+const { sendSuccess, sendError } = require('../utils/response');
 
 function getFee(req, res) {
   try {
@@ -8,9 +8,9 @@ function getFee(req, res) {
     const percent = Number(config.fee.defaultPercentage);
     // prefer any precomputed value (startup may have stored it)
     const fee = config.computedFee || computeFee(amount, percent);
-    res.json({ amount, percent, fee });
+    sendSuccess(res, { amount, percent, fee });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to compute fee' });
+    sendError(res, 'Failed to compute fee', 500);
   }
 }
 

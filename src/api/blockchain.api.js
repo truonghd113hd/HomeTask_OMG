@@ -13,6 +13,8 @@ export const fetchAllTransactions = () => client.get(ENDPOINTS.TRANSACTIONS_ALL)
 
 export const createWallet = () => client.post(ENDPOINTS.WALLETS);
 
+export const giftWallet = (address) => client.post(ENDPOINTS.WALLETS_GIFT, { address });
+
 export const addTransaction = (transaction) => client.post(ENDPOINTS.TRANSACTIONS, transaction);
 
 export const mineBlock = (miningRewardAddress = 'miner1') =>

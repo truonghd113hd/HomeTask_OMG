@@ -4,7 +4,7 @@ import './TransactionForm.css';
 import { addTransaction } from '../api/blockchain.api';
 import { signTransaction } from '../utils/crypto';
 
-const TransactionForm = ({ wallet, onTransactionAdded }) => {
+const TransactionForm = ({ wallet, balance, onTransactionAdded }) => {
   const [formData, setFormData] = useState({ toAddress: '', amount: '' });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -26,12 +26,20 @@ const TransactionForm = ({ wallet, onTransactionAdded }) => {
     setMessage('');
 
     try {
+      const amount = Number(formData.amount);
+
+      if (balance !== null && amount > balance) {
+        setMessage(`Insufficient balance. Your current balance is ${balance}.`);
+        setLoading(false);
+        return;
+      }
+
       // Build the exact payload that gets signed. The timestamp is part of the
       // signed hash, so it must travel to the server unchanged.
       const payload = {
         fromAddress: wallet.publicKey,
         toAddress: formData.toAddress.trim(),
-        amount: Number(formData.amount),
+        amount,
         timestamp: Date.now(),
       };
 
@@ -113,6 +121,7 @@ TransactionForm.propTypes = {
     publicKey: PropTypes.string.isRequired,
     privateKey: PropTypes.string.isRequired,
   }),
+  balance: PropTypes.number,
   onTransactionAdded: PropTypes.func.isRequired,
 };
 

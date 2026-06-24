@@ -11,10 +11,11 @@
     "serve": "npm run build && npm run server",
     "prod": "npm run serve",
     "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,md,css}\"",
+    "lint": "eslint --ext .js,.jsx src controllers routes middleware models services utils server.js",
     "typecheck": "tsc --noEmit",
     "build:ts": "tsc -p tsconfig.json",
-    "ci": "npm run lint && npm run test",
-    "prepare": "husky install"
+    "ci": "npm run lint && npm run typecheck && npm test -- --watchAll=false",
+    "prepare": "node -e \"process.env.CI || require('child_process').execSync('husky install', {stdio:'inherit'})\""
   },
   "keywords": [
     "blockchain",
