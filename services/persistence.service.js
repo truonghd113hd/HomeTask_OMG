@@ -47,6 +47,7 @@ const defaultFile = () => config.persistence.file;
  * @returns {boolean} `true` on success, `false` if the write failed.
  */
 const save = (blockchain, filePath = defaultFile()) => {
+  const tmpPath = `${filePath}.tmp`;
   try {
     const payload = JSON.stringify(
       {
@@ -59,11 +60,21 @@ const save = (blockchain, filePath = defaultFile()) => {
       2
     );
 
-    fs.writeFileSync(filePath, payload, 'utf8');
+    // Write to a temp file then atomically rename over the target. `rename` is
+    // atomic on the same filesystem, so a crash mid-write can never leave a
+    // half-written (corrupt) file — the previous state stays intact until the
+    // new file is fully written.
+    fs.writeFileSync(tmpPath, payload, 'utf8');
+    fs.renameSync(tmpPath, filePath);
     logger.debug(`Blockchain state saved to ${filePath}`);
     return true;
   } catch (err) {
     logger.error(`Failed to save blockchain state: ${err.message}`);
+    try {
+      fs.unlinkSync(tmpPath);
+    } catch {
+      /* temp file may not exist — nothing to clean up */
+    }
     return false;
   }
 };

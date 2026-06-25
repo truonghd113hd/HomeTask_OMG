@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import './Wallet.css';
 import { createWallet, giftWallet } from '../api/blockchain.api';
+import { deriveAddress } from '../utils/crypto';
 
 /**
  * Wallet panel.
@@ -16,6 +17,21 @@ const Wallet = ({ wallet, onWalletCreated, balance }) => {
   const [giftMessage, setGiftMessage] = useState({ text: '', type: '' });
   const [revealKey, setRevealKey] = useState(false);
   const [giftLoading, setGiftLoading] = useState(false);
+  const [importKey, setImportKey] = useState('');
+
+  const handleImport = () => {
+    setError('');
+    try {
+      const privateKey = importKey.trim();
+      // Derive the address locally — the private key never leaves the browser.
+      const publicKey = deriveAddress(privateKey);
+      onWalletCreated({ publicKey, privateKey });
+      setImportKey('');
+      setRevealKey(false);
+    } catch (err) {
+      setError(err.message || 'Invalid private key');
+    }
+  };
 
   const handleCreate = async () => {
     setLoading(true);
@@ -37,7 +53,12 @@ const Wallet = ({ wallet, onWalletCreated, balance }) => {
     setGiftMessage({ text: '', type: '' });
     try {
       const response = await giftWallet(wallet.publicKey);
-      setGiftMessage({ text: response.message || 'Gift coins added!', type: 'success' });
+      setGiftMessage({
+        text: `${
+          response.message || 'Gift coins added to the pending pool.'
+        } Click "Mine Block" to confirm them into your balance.`,
+        type: 'success',
+      });
     } catch (err) {
       setGiftMessage({ text: err.message || 'Failed to request gift coins', type: 'error' });
     } finally {
@@ -78,20 +99,25 @@ const Wallet = ({ wallet, onWalletCreated, balance }) => {
             )}
           </div>
 
-          <div className="wallet-field">
-            <span className="wallet-label">Free Coins (dev only)</span>
-            <button
-              type="button"
-              className="wallet-link"
-              onClick={handleGift}
-              disabled={giftLoading}
-            >
-              {giftLoading ? 'Requesting…' : '🎁 Request Gift Coins'}
-            </button>
-            {giftMessage.text && (
-              <span className={`form-message ${giftMessage.type}`}>{giftMessage.text}</span>
-            )}
-          </div>
+          {process.env.NODE_ENV !== 'production' && (
+            <div className="wallet-field">
+              <span className="wallet-label">Free Coins (dev only)</span>
+              <span className="wallet-hint">
+                Gifted coins appear in your balance after the next block is mined.
+              </span>
+              <button
+                type="button"
+                className="wallet-link"
+                onClick={handleGift}
+                disabled={giftLoading}
+              >
+                {giftLoading ? 'Requesting…' : '🎁 Request Gift Coins'}
+              </button>
+              {giftMessage.text && (
+                <span className={`form-message ${giftMessage.type}`}>{giftMessage.text}</span>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -100,6 +126,33 @@ const Wallet = ({ wallet, onWalletCreated, balance }) => {
       <button type="button" className="submit-button" onClick={handleCreate} disabled={loading}>
         {loading ? 'Generating…' : wallet ? 'Generate New Wallet' : 'Create Wallet'}
       </button>
+
+      <div className="wallet-import">
+        <label className="wallet-label" htmlFor="import-key">
+          Import existing wallet (paste private key)
+        </label>
+        <div className="wallet-import-row">
+          <input
+            id="import-key"
+            type="text"
+            className="wallet-import-input"
+            placeholder="64-character private key"
+            value={importKey}
+            onChange={(e) => setImportKey(e.target.value)}
+          />
+          <button
+            type="button"
+            className="wallet-link"
+            onClick={handleImport}
+            disabled={!importKey.trim()}
+          >
+            Import
+          </button>
+        </div>
+        <span className="wallet-hint">
+          The key is used only in your browser to re-derive the address.
+        </span>
+      </div>
     </div>
   );
 };

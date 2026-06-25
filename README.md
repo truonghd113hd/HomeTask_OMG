@@ -3,7 +3,7 @@
 A blockchain learning project with an Express backend and a React frontend,
 extended with a cryptographic wallet system and persistent chain state.
 
-See also: [INSTRUCTIONS.md](./INSTRUCTIONS.md) · [SETUP.md](./SETUP.md) · [PLAN.md](./PLAN.md)
+See also: [INSTRUCTIONS.md](./INSTRUCTIONS.md) · [SETUP.md](./SETUP.md)
 
 ---
 
@@ -215,6 +215,24 @@ verified ECDSA signatures.
   persistence failure never crashes the server.
 - State is stored in `blockchain.json` in the project root (gitignored).
 
+### 3. Frontend extras (small UX additions beyond the two tasks)
+
+- **Block explorer search/sort/filter** — the blockchain viewer can search by
+  address / hash / amount, filter by date range, and sort newest- or
+  oldest-first. This is strictly view-only: the canonical chain is never
+  reordered (its order is consensus-critical), so the filtering/sorting runs on
+  a copy via the pure helper `src/utils/blocks.js` (unit-tested).
+- **Wallet persistence** — the active wallet is kept in `localStorage`
+  (`src/hooks/usePersistentWallet.js`) so it survives a page refresh. See the
+  security trade-off under Known limitations.
+- **Import existing wallet** — paste a private key to re-derive its address
+  entirely in the browser (`deriveAddress` in `src/utils/crypto.js`), so a
+  wallet can be reused on another browser/device. The key is never sent to the
+  server.
+- **Pending-transaction cues** — the stats panel highlights the pending count
+  and the Mine button shows how many transactions are waiting, so it's clear a
+  gift/transfer needs a block mined before it confirms.
+
 ---
 
 ### New environment variables
@@ -242,13 +260,17 @@ The Dockerfile was updated to a **two-stage build**:
 ### Known limitations / trade-offs
 
 - **Synchronous persistence I/O.** `save()`/`load()` use `fs.*Sync` so writes
-  after each mutation stay ordered and the file never tears. For this app's
-  tiny payload that is fine; a high-throughput chain would want batched/async
-  writes.
+  after each mutation stay ordered, and `save()` writes to a temp file then
+  atomically renames it over the target, so a crash mid-write can never corrupt
+  the state file. For this app's tiny payload that is fine; a high-throughput
+  chain would want batched/async writes.
 - **No balance enforcement.** As in the original, `addTransaction` does not
   check that a sender can afford the amount — only that the signature is valid.
-- **Browser key handling.** The private key lives in React state only and is
-  lost on page refresh; there is no encrypted keystore.
+- **Browser key handling.** The wallet (including its private key) is persisted
+  in `localStorage` so it survives a page refresh, and is never sent to the
+  server. This is a demo-grade trade-off: an unencrypted private key in
+  `localStorage` is exposed to any XSS. A production wallet would use an
+  encrypted keystore, a hardware wallet, or never expose the key to JS.
 - **`isValidAddress` is permissive.** The backend validator only checks for a
   non-empty string; the cryptographic check happens inside `Transaction.isValid()`
   when the signature is verified against the claimed public key.

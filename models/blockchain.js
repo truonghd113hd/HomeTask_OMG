@@ -170,17 +170,24 @@ class Blockchain {
 
   minePendingTransactions(miningRewardAddress) {
     const rewardTx = new Transaction(null, miningRewardAddress, this.miningReward);
-    this.pendingTransactions.push(rewardTx);
+
+    // Snapshot the transactions to mine and clear the pending pool *before*
+    // mining, so the block owns its own array. Any transaction that arrives
+    // while this block is being mined accumulates in the fresh pending pool
+    // instead of mutating the block's contents (which would invalidate its
+    // already-computed hash). This keeps mining correct even if it is ever
+    // made asynchronous or offloaded to a worker thread.
+    const transactionsToMine = [...this.pendingTransactions, rewardTx];
+    this.pendingTransactions = [];
 
     const block = new Block(
       Date.now(),
-      this.pendingTransactions,
+      transactionsToMine,
       this.getLatestBlock().hash
     );
     block.mineBlock(this.difficulty);
 
     this.chain.push(block);
-    this.pendingTransactions = [];
   }
 
   addTransaction(transaction) {
@@ -203,12 +210,16 @@ class Blockchain {
    * system-originated transactions outside of mining.
    *
    * @param {string} toAddress - wallet address to credit.
-   * @param {number} amount - coin amount to gift.
+   * @param {number} amount - coin amount to gift (must be positive).
    * @returns {Transaction} the pending gift transaction.
+   * @throws {Error} if the address is missing or the amount is not positive.
    */
   addGiftTransaction(toAddress, amount) {
     if (!toAddress) {
       throw new Error('Recipient address is required');
+    }
+    if (typeof amount !== 'number' || !isFinite(amount) || amount <= 0) {
+      throw new Error('Gift amount must be a positive number');
     }
     const giftTx = new Transaction(null, toAddress, amount);
     this.pendingTransactions.push(giftTx);

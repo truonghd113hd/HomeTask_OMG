@@ -4,7 +4,7 @@ import './StatsPanel.css';
 import ENDPOINTS from '../api/endpoints';
 
 const StatsPanel = ({ stats, onMine }) => {
-  if (!stats) return null;
+  // Hooks must run unconditionally — keep them above the early return.
   const [feeInfo, setFeeInfo] = useState(null);
 
   useEffect(() => {
@@ -22,6 +22,11 @@ const StatsPanel = ({ stats, onMine }) => {
     };
   }, []);
 
+  if (!stats) return null;
+
+  const pendingCount = stats.pendingTransactions;
+  const hasPending = pendingCount > 0;
+
   return (
     <div className="stats-panel">
       <h2 className="panel-title">Blockchain Stats</h2>
@@ -32,9 +37,9 @@ const StatsPanel = ({ stats, onMine }) => {
           <div className="stat-value">{stats.chainLength}</div>
         </div>
 
-        <div className="stat-item">
+        <div className={`stat-item${hasPending ? ' pending-active' : ''}`}>
           <div className="stat-label">Pending Transactions</div>
-          <div className="stat-value">{stats.pendingTransactions}</div>
+          <div className="stat-value">{pendingCount}</div>
         </div>
 
         <div className="stat-item">
@@ -68,9 +73,16 @@ const StatsPanel = ({ stats, onMine }) => {
         )}
       </div>
 
-      <button className="mine-button" onClick={onMine}>
-        ⛏️ Mine Block
+      <button className={`mine-button${hasPending ? ' has-pending' : ''}`} onClick={onMine}>
+        ⛏️ Mine Block{hasPending ? ` (${pendingCount} pending)` : ''}
       </button>
+
+      {hasPending && (
+        <p className="mine-hint">
+          {pendingCount} transaction{pendingCount > 1 ? 's are' : ' is'} waiting — mine a block to
+          confirm {pendingCount > 1 ? 'them' : 'it'} into balances.
+        </p>
+      )}
     </div>
   );
 };
@@ -84,6 +96,6 @@ StatsPanel.propTypes = {
     difficulty: PropTypes.number.isRequired,
     miningReward: PropTypes.number.isRequired,
     isValid: PropTypes.bool.isRequired,
-  }).isRequired,
+  }),
   onMine: PropTypes.func.isRequired,
 };

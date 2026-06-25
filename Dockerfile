@@ -16,9 +16,11 @@ FROM node:20-alpine AS production
 
 WORKDIR /app
 
-# Install production dependencies only (no devDependencies)
+# Install production dependencies only (no devDependencies).
+# `--ignore-scripts` skips the `prepare` lifecycle (husky install), which would
+# otherwise fail here because husky is a devDependency and is not installed.
 COPY package*.json ./
-RUN npm ci --omit=dev && npm cache clean --force
+RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
 
 # Copy backend source
 COPY config/       ./config/

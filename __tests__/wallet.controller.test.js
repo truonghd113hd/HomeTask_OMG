@@ -76,4 +76,15 @@ describe('wallet.controller.giftCoins', () => {
       config.env = originalEnv;
     }
   });
+
+  it('rejects an invalid (non-public-key) address with 400', () => {
+    const res = mockRes();
+    const next = jest.fn();
+
+    giftCoins({ body: { address: 'not-a-key' } }, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json.mock.calls[0][0].success).toBe(false);
+    expect(next).not.toHaveBeenCalled();
+  });
 });

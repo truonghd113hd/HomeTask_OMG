@@ -7,3 +7,7 @@ npm-debug.log*
 
 # Persisted blockchain state (Task 2)
 /blockchain.json
+/blockchain.json.tmp
+
+# Local Claude Code settings
+/.claude/

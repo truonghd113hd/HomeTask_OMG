@@ -37,6 +37,24 @@
   grid-column: 1 / -1;
 }
 
+/* Draw attention to unconfirmed transactions waiting to be mined. */
+.stat-item.pending-active {
+  background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+  color: #7c2d12;
+  box-shadow: 0 0 0 2px #fb923c;
+  animation: pending-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes pending-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 2px rgba(251, 146, 60, 0.6);
+  }
+  50% {
+    box-shadow: 0 0 0 5px rgba(251, 146, 60, 0.25);
+  }
+}
+
 .stat-label {
   font-size: 0.85rem;
   opacity: 0.9;
@@ -79,4 +97,15 @@
 
 .mine-button:active {
   transform: translateY(0);
+}
+
+.mine-button.has-pending {
+  box-shadow: 0 0 0 2px #fb923c, 0 6px 18px rgba(245, 87, 108, 0.35);
+}
+
+.mine-hint {
+  margin-top: 10px;
+  font-size: 0.8rem;
+  color: #9a3412;
+  text-align: center;
 }

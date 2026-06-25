@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import './App.css';
 
 import BlockchainViewer from './components/BlockchainViewer';
@@ -8,32 +8,41 @@ import Header from './components/Header';
 import Wallet from './components/Wallet';
 
 import useBlockchain from './hooks/useBlockchain';
+import usePersistentWallet from './hooks/usePersistentWallet';
 import { mineBlock, fetchBalance } from './api/blockchain.api';
 
 function App() {
   const { chain, stats, loading, error, refresh } = useBlockchain();
-  // The active wallet lives in client state only; its private key is used to
-  // sign transactions locally and is never sent to the server.
-  const [wallet, setWallet] = useState(null);
+  // The active wallet lives in client state only (persisted in localStorage so
+  // it survives refreshes); its private key is used to sign transactions
+  // locally and is never sent to the server.
+  const [wallet, setWallet] = usePersistentWallet();
   const [balance, setBalance] = useState(null);
   const [mineError, setMineError] = useState(null);
 
-  const refreshBalance = useCallback(async () => {
+  // Refresh the wallet balance whenever the wallet changes or the chain
+  // updates. The `ignore` flag discards a response that resolves after a newer
+  // request has already superseded it (out-of-order fetch race).
+  useEffect(() => {
     if (!wallet) {
       setBalance(null);
-      return;
+      return undefined;
     }
-    try {
-      const data = await fetchBalance(wallet.publicKey);
-      setBalance(data.balance);
-    } catch (err) {
-      console.error('Failed to fetch balance:', err.message);
-    }
-  }, [wallet]);
 
-  useEffect(() => {
-    refreshBalance();
-  }, [refreshBalance, chain]);
+    let ignore = false;
+    (async () => {
+      try {
+        const data = await fetchBalance(wallet.publicKey);
+        if (!ignore) setBalance(data.balance);
+      } catch (err) {
+        if (!ignore) console.error('Failed to fetch balance:', err.message);
+      }
+    })();
+
+    return () => {
+      ignore = true;
+    };
+  }, [wallet, chain]);
 
   const handleMine = async () => {
     try {

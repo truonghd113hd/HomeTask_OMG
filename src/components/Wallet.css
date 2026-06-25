@@ -52,6 +52,41 @@
   color: #5b21b6;
 }
 
+.wallet-hint {
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.wallet-import {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.wallet-import-row {
+  display: flex;
+  gap: 8px;
+}
+
+.wallet-import-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 10px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-family: 'TechMono', monospace;
+  font-size: 0.8rem;
+}
+
+.wallet-import-input:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
 .wallet-link {
   align-self: flex-start;
   background: none;

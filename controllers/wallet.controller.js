@@ -2,7 +2,7 @@ const { generateKeyPair } = require('../utils/crypto');
 const { sendCreated, sendSuccess, sendError } = require('../utils/response');
 const { blockchain } = require('../models');
 const config = require('../config');
-const { isValidAddress, sanitizeAddress } = require('../utils/validator');
+const { isValidPublicKey, sanitizeAddress } = require('../utils/validator');
 
 /**
  * POST /api/wallets
@@ -43,7 +43,7 @@ const giftCoins = (req, res, next) => {
     }
 
     const address = sanitizeAddress(req.body.address);
-    if (!isValidAddress(address)) {
+    if (!isValidPublicKey(address)) {
       return sendError(res, 'Invalid wallet address format', 400);
     }
 

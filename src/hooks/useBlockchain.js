@@ -8,17 +8,26 @@ const useBlockchain = (pollInterval = POLL_INTERVAL_MS) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const intervalRef = useRef(null);
+  const latestRequestRef = useRef(0);
 
   const refresh = useCallback(async () => {
+    const requestId = ++latestRequestRef.current;
     try {
       const { chainData, statsData } = await fetchDashboard();
+      // A newer refresh (poll or manual) has superseded this one — drop its
+      // result so out-of-order responses can't clobber fresher state.
+      if (requestId !== latestRequestRef.current) return;
       setChain(chainData);
       setStats(statsData);
       setError(null);
     } catch (err) {
-      setError(err.message || 'Failed to connect to the blockchain API.');
+      if (requestId === latestRequestRef.current) {
+        setError(err.message || 'Failed to connect to the blockchain API.');
+      }
     } finally {
-      setLoading(false);
+      if (requestId === latestRequestRef.current) {
+        setLoading(false);
+      }
     }
   }, []);
 

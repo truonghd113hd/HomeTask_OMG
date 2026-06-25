@@ -1,0 +1,12 @@
+{
+  "watch": ["."],
+  "ext": "js,mjs,cjs,json",
+  "ignore": [
+    "blockchain.json",
+    "node_modules/",
+    "build/",
+    "coverage/",
+    "__tests__/",
+    "src/"
+  ]
+}

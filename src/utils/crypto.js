@@ -55,3 +55,24 @@ export const signTransaction = (privateKeyHex, tx) => {
   });
   return toHex(signature);
 };
+
+/**
+ * Derives the wallet address (uncompressed public key) from a raw private key,
+ * so an existing wallet can be re-imported entirely client-side. The address
+ * format (`04` + x + y) matches what the backend produces and verifies against.
+ *
+ * @param {string} privateKeyHex - raw 32-byte scalar, hex-encoded (64 chars).
+ * @returns {string} the uncompressed EC point `04…` (130 hex chars).
+ * @throws {Error} if the key is malformed or not a valid secp256k1 scalar.
+ */
+export const deriveAddress = (privateKeyHex) => {
+  const key = (privateKeyHex || '').trim().toLowerCase();
+  if (!/^[0-9a-f]{64}$/.test(key)) {
+    throw new Error('Private key must be 64 hexadecimal characters');
+  }
+  try {
+    return toHex(secp.getPublicKey(hexToBytes(key), false)); // false = uncompressed
+  } catch {
+    throw new Error('Invalid private key');
+  }
+};

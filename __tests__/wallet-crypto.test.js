@@ -104,3 +104,31 @@ describe('Blockchain.addTransaction', () => {
     expect(chain.getBalanceOfAddress(recipient.publicKey)).toBe(25);
   });
 });
+
+describe('Blockchain.addGiftTransaction (faucet)', () => {
+  let chain;
+  let recipient;
+
+  beforeEach(() => {
+    chain = new Blockchain(1, 100);
+    recipient = generateKeyPair();
+  });
+
+  it('adds an unsigned system gift and credits the address after mining', () => {
+    chain.addGiftTransaction(recipient.publicKey, 500);
+    chain.minePendingTransactions('miner');
+
+    expect(chain.isChainValid()).toBe(true);
+    expect(chain.getBalanceOfAddress(recipient.publicKey)).toBe(500);
+  });
+
+  it('rejects a non-positive gift amount', () => {
+    expect(() => chain.addGiftTransaction(recipient.publicKey, 0)).toThrow(
+      /positive number/i
+    );
+    expect(() => chain.addGiftTransaction(recipient.publicKey, -5)).toThrow(
+      /positive number/i
+    );
+    expect(chain.pendingTransactions).toHaveLength(0);
+  });
+});

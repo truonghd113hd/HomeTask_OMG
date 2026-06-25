@@ -1,7 +1,19 @@
 node_modules
 dist
+build
 .git
 .vscode
+.claude
 coverage
 *.log
 public/fonts
+
+# Secrets and local runtime state must never enter the image
+.env
+blockchain.json
+blockchain.json.tmp
+
+# Not needed at runtime
+__tests__
+PLAN.md
+PLANNING.md
